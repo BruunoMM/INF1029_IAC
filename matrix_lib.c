@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <immintrin.h>
 
+struct matrix { 
+    unsigned long int height;
+    unsigned long int width;
+    float *rows;
+};
+
 int main(void) {
 
     // write scalar_matrix_mult tests
@@ -27,17 +33,11 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
         resultVec = _mm256_mul_ps(currentVec, scalarVec);
         
         // store the result
-        _mm256_store_pd(currentRow, resultVec);
+        _mm256_store_ps(currentRow, resultVec);
         
         // increment pointer
         currentRow++;
     }
 
     return 1;
-}
-
-struct matrix { 
-    unsigned long int height;
-    unsigned long int width;
-    float *rows;
 }
