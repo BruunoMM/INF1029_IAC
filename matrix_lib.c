@@ -1,22 +1,18 @@
 #include <stdio.h>
 #include <immintrin.h>
-
-struct matrix { 
-    unsigned long int height;
-    unsigned long int width;
-    float *rows;
-};
+#include "matrix_lib.h"
 
 void test_scalar_matrix_mult();
-int scalar_matrix_mult(float scalar_value, struct matrix *matrix);
 void printMatrix(struct matrix *matrix);
 void fill_matrix_with_zero(struct matrix *matrix);
-int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC);
 void test_matrix_matrix_mult();
 
-int main(void) {
-    //test_scalar_matrix_mult();
+int run_tests(void) {
+    printf("\nRunning scalar multiplication test\n");
+    test_scalar_matrix_mult();
+    printf("\nRunning matrix multiplication test\n");
     test_matrix_matrix_mult();
+    printf("\n\n");
     return 0;
 }
 
@@ -24,8 +20,8 @@ void test_matrix_matrix_mult() {
     struct matrix testMatrixA, testMatrixB, testMatrixC;
     float *rowsA, *rowsB, *rowsC;
 
-    rowsA = malloc(6*sizeof(float));
-    for(int i = 0; i < 6; i++){
+    rowsA = aligned_alloc(32, 32*sizeof(float));
+    for(int i = 0; i < 8; i++){
         rowsA[i] = 9.0;
     }
 
@@ -33,7 +29,7 @@ void test_matrix_matrix_mult() {
     testMatrixA.width = 3;
     testMatrixA.rows = rowsA;
 
-    rowsB = malloc(24*sizeof(float));
+    rowsB = aligned_alloc(32, 32*sizeof(float));
     for(int i = 0; i < 24; i++){
         rowsB[i] = 2.0;
     }
@@ -42,7 +38,7 @@ void test_matrix_matrix_mult() {
     testMatrixB.width = 8;
     testMatrixB.rows = rowsB;
 
-    rowsC = malloc(16*sizeof(float));
+    rowsC = aligned_alloc(32, 32*sizeof(float));
     testMatrixC.height = 2;
     testMatrixC.width = 8;
     testMatrixC.rows = rowsC;
@@ -52,6 +48,7 @@ void test_matrix_matrix_mult() {
     printMatrix(&testMatrixB);
 
     int result = matrix_matrix_mult(&testMatrixA, &testMatrixB, &testMatrixC);
+    printf("---\n");
     printMatrix(&testMatrixC);
 }
 
@@ -59,7 +56,7 @@ void test_scalar_matrix_mult() {
     struct matrix testMatrix;
     float *rows;
 
-    rows = malloc(8*sizeof(float));
+    rows = aligned_alloc(32,32*sizeof(float));
     rows[0] = 5.0;
     rows[1] = 2.0;
     rows[2] = 3.0;
@@ -96,7 +93,7 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
     scalarVec = _mm256_set1_ps(scalar_value);
 
     for(int i=0; i < (height*width)/8; i++) {
-        currentVec = _mm256_loadu_ps(currentRow);
+        currentVec = _mm256_load_ps(currentRow);
         
         // operation
         resultVec = _mm256_mul_ps(currentVec, scalarVec);
@@ -121,31 +118,30 @@ int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct m
     __m256 resultVec; 
 
     fill_matrix_with_zero(matrixC);
-
+   
     float value;
     for(int i=0; i < (widthA * heightA); i++) {
         value = matrixA->rows[i];
         matrixAVec = _mm256_set1_ps(value); // set value in matrix A to vector
-
+        
         if(i % widthA == 0) {
             currentPointB = matrixB->rows;
         }
         
         int currentLine = i / widthA;
         currentPointC = matrixC->rows + (currentLine * widthB);
-        printf("A");
-        resultVec = _mm256_loadu_ps(currentPointC);
-        printf("B");
+        resultVec = _mm256_load_ps(currentPointC);
+       
         for(int j=0; j < widthB/8; j++) {
-            matrixBVec = _mm256_loadu_ps(currentPointB);
+            matrixBVec = _mm256_load_ps(currentPointB);
             resultVec = _mm256_fmadd_ps(matrixAVec, matrixBVec, resultVec);
-            printf("C");
+            
             _mm256_store_ps(currentPointC, resultVec);
-            printf("D");
+
             currentPointC += 8;
             currentPointB += 8;
 
-            resultVec = _mm256_loadu_ps(currentPointC);
+            resultVec = _mm256_load_ps(currentPointC);
         }
     }
 
