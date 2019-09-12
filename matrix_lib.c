@@ -10,10 +10,59 @@ struct matrix {
 void test_scalar_matrix_mult();
 int scalar_matrix_mult(float scalar_value, struct matrix *matrix);
 void printMatrix(struct matrix *matrix);
+void fill_matrix_with_zero(struct matrix *matrix);
+int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC);
+void test_matrix_matrix_mult();
 
 int main(void) {
-    test_scalar_matrix_mult();
+    // test_scalar_matrix_mult();
+    test_matrix_matrix_mult();
     return 0;
+}
+
+void test_matrix_matrix_mult() {
+    struct matrix testMatrixA, testMatrixB, testMatrixC;
+    float *rowsA, *rowsB, *rowsC;
+
+    rowsA = malloc(8*sizeof(float));
+    rowsA[0] = 5.0;
+    rowsA[1] = 2.0;
+    rowsA[2] = 3.0;
+    rowsA[3] = 1.0;
+    rowsA[4] = 1.0;
+    rowsA[5] = 1.0;
+    rowsA[6] = 1.0;
+    rowsA[7] = 1.0;
+
+    testMatrixA.height = 2;
+    testMatrixA.width = 4;
+    testMatrixA.rows = rowsA;
+
+    rowsB = malloc(8*sizeof(float));
+    rowsB[0] = 3.0;
+    rowsB[1] = 3.0;
+    rowsB[2] = 2.0;
+    rowsB[3] = 2.0;
+    rowsB[4] = 2.0;
+    rowsB[5] = 2.0;
+    rowsB[6] = 2.0;
+    rowsB[7] = 2.0;
+
+    testMatrixB.height = 4;
+    testMatrixB.width = 2;
+    testMatrixB.rows = rowsB;
+
+    rowsC = malloc(4*sizeof(float));
+    testMatrixC.height = 2;
+    testMatrixC.width = 2;
+    testMatrixC.rows = rowsC;
+
+    printMatrix(&testMatrixA);
+    printf("---\n");
+    printMatrix(&testMatrixB);
+
+    int result = matrix_matrix_mult(&testMatrixA, &testMatrixB, &testMatrixC);
+    // printMatrix(&testMatrixC);
 }
 
 void test_scalar_matrix_mult() {
@@ -66,10 +115,54 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
         _mm256_store_ps(currentRow, resultVec);
         
         // increment pointer
-        currentRow++;
+        currentRow += 8;
     }
 
     return 1;
+}
+
+int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC) {
+    unsigned long int heightA = matrixA->height, heightB = matrixB->height;
+    unsigned long int widthA = matrixA->width, widthB = matrixB->width;
+    float *currentPointA = matrixA->rows, *currentPointB = matrixB->rows, *currentPointC = matrixC->rows;
+
+    __m256 matrixAVec; 
+    __m256 matrixBVec;
+    __m256 resultVec; 
+
+    fill_matrix_with_zero(matrixC);
+
+    float value;
+    for(int i=0; i < (widthA * heightA); i++) {
+        value = matrixA->rows[i];
+        matrixAVec = _mm256_set1_ps(value); // set value in matrix A to vector
+
+        if(i % widthA == 0) {
+            currentPointB = matrixB->rows;
+        }
+        int currentLine = i / widthA;
+        currentPointC = matrixC->rows + (currentLine * widthB);
+
+        resultVec = _mm256_loadu_ps(currentPointC);
+
+        for(int j=0; j < widthB/8; j++) {
+            matrixBVec = _mm256_loadu_ps(currentPointB);
+            resultVec = _mm256_fmadd_ps(matrixAVec, matrixBVec, resultVec);
+
+            _mm256_store_ps(currentPointC, resultVec);
+            
+            currentPointC += 8;
+            currentPointB += 8;
+        }
+    }
+
+    return 1;
+}
+
+void fill_matrix_with_zero(struct matrix *matrix) {
+    for(int i=0; i < (matrix->height * matrix->width); i++) {
+        matrix->rows[i] = 0;
+    }
 }
 
 void printMatrix(struct matrix *matrix) {
