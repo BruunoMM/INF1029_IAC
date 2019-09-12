@@ -15,7 +15,7 @@ int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct m
 void test_matrix_matrix_mult();
 
 int main(void) {
-    // test_scalar_matrix_mult();
+    //test_scalar_matrix_mult();
     test_matrix_matrix_mult();
     return 0;
 }
@@ -24,37 +24,27 @@ void test_matrix_matrix_mult() {
     struct matrix testMatrixA, testMatrixB, testMatrixC;
     float *rowsA, *rowsB, *rowsC;
 
-    rowsA = malloc(8*sizeof(float));
-    rowsA[0] = 5.0;
-    rowsA[1] = 2.0;
-    rowsA[2] = 3.0;
-    rowsA[3] = 1.0;
-    rowsA[4] = 1.0;
-    rowsA[5] = 1.0;
-    rowsA[6] = 1.0;
-    rowsA[7] = 1.0;
+    rowsA = malloc(6*sizeof(float));
+    for(int i = 0; i < 6; i++){
+        rowsA[i] = 9.0;
+    }
 
     testMatrixA.height = 2;
-    testMatrixA.width = 4;
+    testMatrixA.width = 3;
     testMatrixA.rows = rowsA;
 
-    rowsB = malloc(8*sizeof(float));
-    rowsB[0] = 3.0;
-    rowsB[1] = 3.0;
-    rowsB[2] = 2.0;
-    rowsB[3] = 2.0;
-    rowsB[4] = 2.0;
-    rowsB[5] = 2.0;
-    rowsB[6] = 2.0;
-    rowsB[7] = 2.0;
+    rowsB = malloc(24*sizeof(float));
+    for(int i = 0; i < 24; i++){
+        rowsB[i] = 2.0;
+    }
 
-    testMatrixB.height = 4;
-    testMatrixB.width = 2;
+    testMatrixB.height = 3;
+    testMatrixB.width = 8;
     testMatrixB.rows = rowsB;
 
-    rowsC = malloc(4*sizeof(float));
+    rowsC = malloc(16*sizeof(float));
     testMatrixC.height = 2;
-    testMatrixC.width = 2;
+    testMatrixC.width = 8;
     testMatrixC.rows = rowsC;
 
     printMatrix(&testMatrixA);
@@ -62,7 +52,7 @@ void test_matrix_matrix_mult() {
     printMatrix(&testMatrixB);
 
     int result = matrix_matrix_mult(&testMatrixA, &testMatrixB, &testMatrixC);
-    // printMatrix(&testMatrixC);
+    printMatrix(&testMatrixC);
 }
 
 void test_scalar_matrix_mult() {
@@ -126,7 +116,7 @@ int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct m
     unsigned long int widthA = matrixA->width, widthB = matrixB->width;
     float *currentPointA = matrixA->rows, *currentPointB = matrixB->rows, *currentPointC = matrixC->rows;
 
-    __m256 matrixAVec; 
+    __m256 matrixAVec;
     __m256 matrixBVec;
     __m256 resultVec; 
 
@@ -140,19 +130,22 @@ int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct m
         if(i % widthA == 0) {
             currentPointB = matrixB->rows;
         }
+        
         int currentLine = i / widthA;
         currentPointC = matrixC->rows + (currentLine * widthB);
-
+        printf("A");
         resultVec = _mm256_loadu_ps(currentPointC);
-
+        printf("B");
         for(int j=0; j < widthB/8; j++) {
             matrixBVec = _mm256_loadu_ps(currentPointB);
             resultVec = _mm256_fmadd_ps(matrixAVec, matrixBVec, resultVec);
-
+            printf("C");
             _mm256_store_ps(currentPointC, resultVec);
-            
+            printf("D");
             currentPointC += 8;
             currentPointB += 8;
+
+            resultVec = _mm256_loadu_ps(currentPointC);
         }
     }
 
