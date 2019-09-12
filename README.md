@@ -1,2 +1,5 @@
 ## HOW TO COMPILE
-$ gcc –mavx2 -o matrix_lib matrix_lib.c
+$ gcc –mfma -o matrix_lib matrix_lib.c
+
+## HOW TO RUN
+./matrix_lib
