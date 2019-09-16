@@ -5,10 +5,11 @@
 
 struct matrix *readDatFile(FILE *arq, int height, int width);
 void writeDatFile(FILE *arq, struct matrix *matrix);
+struct matrix* createMatrixC(int height, int width);
+void freeMatrix(struct matrix* matrix);
 
 int main(int argc, char *argv[]) {
-    // run_tests();
-    FILE *arq, *arq2;
+    FILE *arq, *arq2, *arq3, *arq4;
     int height1, width1, height2, width2;
     float cons;
     char *pathFile1, *pathFile2, *pathResultFile1, *pathResultFile2;
@@ -33,28 +34,52 @@ int main(int argc, char *argv[]) {
     
     arq = fopen(pathFile1, "rb");
     arq2 = fopen(pathFile2, "rb");
-    FILE* arq3 = fopen("result1.dat", "wb");
+    arq3 = fopen(pathResultFile1, "wb");
+    arq4 = fopen(pathResultFile2, "wb");
     
-    if (!arq || !arq2 || !arq3) {
+    if (!arq || !arq2) {
         printf("Arquivos de entrada nao existentes.\n");
         return -1;
     }
 
+    if(!arq3 || !arq4) {
+        printf("Nao foi possivel criar arquivos de saida.\n");
+        return -1;
+    }
     struct matrix *matrixA = readDatFile(arq, height1, width1);
     struct matrix *matrixB = readDatFile(arq2, height2, width2);
-    struct matrix *matrixC = malloc(sizeof(struct matrix));
-    matrixC->rows = aligned_alloc(32, height1 * width2 * sizeof(float));
-    matrixC->height = height1;
-    matrixC->width = width2;
+    struct matrix *matrixC = createMatrixC(height1, width2);
 
     scalar_matrix_mult(cons, matrixA);
-
-    printMatrix(matrixA);
+    writeDatFile(arq3, matrixA);
     
     matrix_matrix_mult(matrixA, matrixB, matrixC);
+    writeDatFile(arq4, matrixC);
 
-    printMatrix(matrixC);
+    freeMatrix(matrixA);
+    freeMatrix(matrixB);
+    freeMatrix(matrixC);
+
+    fclose(arq);    
+    fclose(arq2);   
+    fclose(arq3);
+    fclose(arq4);
+
     return 0;
+}
+
+struct matrix* createMatrixC(int height, int width) {
+    struct matrix *matrixC = malloc(sizeof(struct matrix));
+    matrixC->rows = aligned_alloc(32, height * width * sizeof(float));
+    matrixC->height = height;
+    matrixC->width = width;
+
+    return matrixC;
+}
+
+void freeMatrix(struct matrix* matrix) {
+    free(matrix->rows);
+    free(matrix);
 }
 
 struct matrix *readDatFile(FILE *arq, int height, int width){
@@ -68,6 +93,7 @@ struct matrix *readDatFile(FILE *arq, int height, int width){
 
     matrixEx->height = height;
     matrixEx->width = width;
+
     while (!feof(arq) && (count < totalSize)){
         fread(&rows[count], sizeof(float), 1, arq);
         count++;

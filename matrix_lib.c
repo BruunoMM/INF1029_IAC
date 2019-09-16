@@ -47,7 +47,7 @@ void test_matrix_matrix_mult() {
     printf("---\n");
     printMatrix(&testMatrixB);
 
-    int result = matrix_matrix_mult(&testMatrixA, &testMatrixB, &testMatrixC);
+    matrix_matrix_mult(&testMatrixA, &testMatrixB, &testMatrixC);
     printf("---\n");
     printMatrix(&testMatrixC);
 }
@@ -72,7 +72,7 @@ void test_scalar_matrix_mult() {
     
     printMatrix(&testMatrix);
     printf("----\n");
-    int result = scalar_matrix_mult(2.0,&testMatrix);
+    scalar_matrix_mult(2.0,&testMatrix);
 
     printMatrix(&testMatrix);
     free(rows);
@@ -88,7 +88,7 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
 
     if(height == 0 || width == 0 || currentRow == NULL) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
-        return -1;
+        return 0;
     }
 
     scalarVec = _mm256_set1_ps(scalar_value);
@@ -110,13 +110,18 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
 }
 
 int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC) {
-    unsigned long int heightA = matrixA->height, heightB = matrixB->height;
+    unsigned long int heightA = matrixA->height;
     unsigned long int widthA = matrixA->width, widthB = matrixB->width;
-    float *currentPointA = matrixA->rows, *currentPointB = matrixB->rows, *currentPointC = matrixC->rows;
+    float *currentPointB = matrixB->rows, *currentPointC = matrixC->rows;
 
     __m256 matrixAVec;
     __m256 matrixBVec;
-    __m256 resultVec; 
+    __m256 resultVec;
+
+    if(heightA == 0 || widthA == 0 || widthB == 0 || currentPointB == NULL || currentPointC == NULL) {
+        printf("Dimensao nao pode ser igual a zero.\n"); 
+        return 0;
+    }
 
     fill_matrix_with_zero(matrixC);
    
