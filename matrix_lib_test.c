@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     width1 = atoi(argv[3]);
     height2 = atoi(argv[4]);
     width2 = atoi(argv[5]);
-
+    
     struct matrix *matrixA = readDatFile(arq, height1, width1);
     struct matrix *matrixB = readDatFile(arq2, height2, width2);
 
@@ -28,12 +28,15 @@ int main(int argc, char *argv[]) {
 struct matrix *readDatFile(FILE *arq, int height, int width){
     struct matrix *matrixEx;
     float *rows;
+    int count = 0;
     
     matrixEx = malloc(sizeof(struct matrix));
     rows = aligned_alloc(32,32*sizeof(float));
     float* tmpRows = rows;
 
-    while (fscanf(arq,"%lf",&tmpRows) == 1){
+    while (!feof(arq) && (count< height*width)){
+        fscanf(arq, "%f", tmpRows);
+        count++;
         tmpRows++;
     }
 
