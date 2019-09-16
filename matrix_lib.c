@@ -86,8 +86,9 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
     __m256 scalarVec;
     __m256 resultVec;
 
-    if(height == 0 || width == 0 || currentRow == NULL) { 
-        return 0;
+    if(height == 0 || width == 0 || currentRow == NULL) {
+        printf("Dimensao nao pode ser igual a zero.\n"); 
+        return -1;
     }
 
     scalarVec = _mm256_set1_ps(scalar_value);

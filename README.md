@@ -1,5 +1,8 @@
 ## HOW TO COMPILE
-$ gcc –mfma -o matrix_lib matrix_lib.c
+$ make build
 
 ## HOW TO RUN
-./matrix_lib
+$ make run
+
+## INSTRUCTIONS
+You can configure the parameters on the Makefile.
