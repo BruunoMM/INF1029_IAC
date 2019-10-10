@@ -10,7 +10,7 @@ void freeMatrix(struct matrix* matrix);
 
 int main(int argc, char *argv[]) {
     FILE *arq, *arq2, *arq3, *arq4;
-    int height1, width1, height2, width2, threads;
+    int height1, width1, height2, width2;
     float cons;
     char *pathFile1, *pathFile2, *pathResultFile1, *pathResultFile2;
 
@@ -19,11 +19,10 @@ int main(int argc, char *argv[]) {
     width1 = atoi(argv[3]);
     height2 = atoi(argv[4]);
     width2 = atoi(argv[5]);
-    threads = atoi(argv[6])
-    pathFile1 = argv[7];
-    pathFile2 = argv[8];
-    pathResultFile1 = argv[9];
-    pathResultFile2 = argv[10];
+    pathFile1 = argv[6];
+    pathFile2 = argv[7];
+    pathResultFile1 = argv[8];
+    pathResultFile2 = argv[9];
 
     if(argc != 10) {
         printf("Numero de argumentos invalidos.\n");
@@ -51,7 +50,6 @@ int main(int argc, char *argv[]) {
     struct matrix *matrixB = readDatFile(arq2, height2, width2);
     struct matrix *matrixC = createMatrixC(height1, width2);
 
-    set_number_threads(threads);
     scalar_matrix_mult(cons, matrixA);
     writeDatFile(arq3, matrixA);
     
@@ -66,7 +64,7 @@ int main(int argc, char *argv[]) {
     fclose(arq2);   
     fclose(arq3);
     fclose(arq4);
-    
+
     return 0;
 }
 

@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <pthread.h>
 #include <immintrin.h>
 #include "matrix_lib.h"
 
@@ -7,14 +6,6 @@ void test_scalar_matrix_mult();
 void printMatrix(struct matrix *matrix);
 void fill_matrix_with_zero(struct matrix *matrix);
 void test_matrix_matrix_mult();
-
-int threads_num = 1;
-
-__m256 currentVec; 
-__m256 scalarVec;
-__m256 resultVec;
-struct matrix *matrix;
-float scalarValue;
 
 int run_tests(void) {
     printf("\nRunning scalar multiplication test\n");
@@ -87,66 +78,35 @@ void test_scalar_matrix_mult() {
     free(rows);
 }
 
-void set_number_threads(int num_threads) {
-    threads_num = num_threads;
-}
-
 int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
     unsigned long int height = matrix->height;
     unsigned long int width = matrix->width;
-    pthread_t *threads;
-    pthread_attr_t attribute;
-    long status;
-
-    matrix = matrix;
-    scalarValue = scalar_value;
+    float *currentRow = matrix->rows;
+    __m256 currentVec; 
+    __m256 scalarVec;
+    __m256 resultVec;
 
     if(height == 0 || width == 0 || currentRow == NULL) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
         return 0;
     }
 
-    threads = malloc(threads_num * sizeof(pthread_t));
-    pthread_attr_init(&attribute);
-    pthread_attr_setdetachstate(&attribute, PTHREAD_CREATE_JOINABLE);
+    scalarVec = _mm256_set1_ps(scalar_value);
 
-    for(long i=0; i < threads_num; i++) {
-        pthread_create(&threads[i], &attribute, calculate_scalar_matrix, (void *)i);
-    }
-    for(long i=0; i < threads_num; i++) {
-        pthread_join(threads[i], (void *)i);
+    for(int i=0; i < (height*width)/8; i++) {
+        currentVec = _mm256_load_ps(currentRow);
+        
+        // operation
+        resultVec = _mm256_mul_ps(currentVec, scalarVec);
+        
+        // store the result
+        _mm256_store_ps(currentRow, resultVec);
+        
+        // increment pointer
+        currentRow += 8;
     }
 
     return 1;
-}
-
-void *calculate_scalar_matrix(void *thread_id) {
-    unsigned long int height = matrix->height;
-    unsigned long int width = matrix->width;
-
-    int linesToCalculate = (height/threads_num);
-    long startingLine = (long)thread_id * linesToCalculate; // not an index
-    long startingPoint = startingLine * width;  // index
-
-    float *currentRow =  &matrix->rows[startingPoint];
-
-    scalarVec = _mm256_set1_ps(scalar_value);
-
-    for(int i=0; i < height/threads; i++) {
-        for(int j=0; j < width/8; j++) {
-            currentVec = _mm256_load_ps(currentRow);
-        
-            // operation
-            resultVec = _mm256_mul_ps(currentVec, scalarVec);
-            
-            // store the result
-            _mm256_store_ps(currentRow, resultVec);
-            
-            // increment pointer
-            currentRow += 8;
-        }
-    }
-    pthread_exit(thread_id);
 }
 
 int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC) {

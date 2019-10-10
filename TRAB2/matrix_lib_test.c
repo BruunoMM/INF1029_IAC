@@ -8,6 +8,7 @@ void writeDatFile(FILE *arq, struct matrix *matrix);
 struct matrix* createMatrixC(int height, int width);
 void freeMatrix(struct matrix* matrix);
 
+
 int main(int argc, char *argv[]) {
     FILE *arq, *arq2, *arq3, *arq4;
     int height1, width1, height2, width2, threads;
@@ -19,13 +20,13 @@ int main(int argc, char *argv[]) {
     width1 = atoi(argv[3]);
     height2 = atoi(argv[4]);
     width2 = atoi(argv[5]);
-    threads = atoi(argv[6])
+    threads = atoi(argv[6]);
     pathFile1 = argv[7];
     pathFile2 = argv[8];
     pathResultFile1 = argv[9];
     pathResultFile2 = argv[10];
 
-    if(argc != 10) {
+    if(argc != 11) {
         printf("Numero de argumentos invalidos.\n");
         return -1;
     } else if ((height1 + width1 + height2 + width2) % 8 != 0) {
