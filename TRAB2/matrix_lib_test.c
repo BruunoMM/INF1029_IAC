@@ -55,9 +55,11 @@ int main(int argc, char *argv[]) {
     set_number_threads(threads);
     scalar_matrix_mult(cons, matrixA);
     writeDatFile(arq3, matrixA);
+    printMatrix(matrixA);
     
     matrix_matrix_mult(matrixA, matrixB, matrixC);
     writeDatFile(arq4, matrixC);
+    printMatrix(matrixC);
 
     freeMatrix(matrixA);
     freeMatrix(matrixB);

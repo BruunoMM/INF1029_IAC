@@ -8,14 +8,21 @@ void printMatrix(struct matrix *matrix);
 void fill_matrix_with_zero(struct matrix *matrix);
 void test_matrix_matrix_mult();
 void *calculate_scalar_matrix(void *thread_id);
+void *calculate_matrix_matrix(void *thread_id);
 
 int threads_num = 1;
 
+// scalarMatrix
 __m256 currentVec; 
 __m256 scalarVec;
 __m256 resultVec;
 struct matrix *global_matrix;
 float scalarValue;
+
+// matrixMatrix
+struct matrix *gmatrixA;
+struct matrix *gmatrixB;
+struct matrix *gmatrixC;
 
 int run_tests(void) {
     printf("\nRunning scalar multiplication test\n");
@@ -137,7 +144,7 @@ void *calculate_scalar_matrix(void *thread_id) {
         for(int j=0; j < width/8; j++) {
             currentVec = _mm256_load_ps(currentRow);
 
-            printf("THREAD %d - %p\n", (long)thread_id, currentRow);
+            // printf("THREAD %ld - %p\n", (long)thread_id, currentRow);
         
             // operation
             resultVec = _mm256_mul_ps(currentVec, scalarVec);
@@ -149,38 +156,67 @@ void *calculate_scalar_matrix(void *thread_id) {
             currentRow += 8;
         }
     }
-    // pthread_exit(thread_id);
+    pthread_exit(thread_id);
 }
 
 int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC) {
     unsigned long int heightA = matrixA->height;
     unsigned long int widthA = matrixA->width, widthB = matrixB->width;
-    float *currentPointB = matrixB->rows, *currentPointC = matrixC->rows;
+    pthread_t *threads;
+    pthread_attr_t attribute;
 
-    __m256 matrixAVec;
-    __m256 matrixBVec;
-    __m256 resultVec;
+    gmatrixA = matrixA;
+    gmatrixB = matrixB;
+    gmatrixC = matrixC;
 
-    if(heightA == 0 || widthA == 0 || widthB == 0 || currentPointB == NULL || currentPointC == NULL) {
+    if(heightA == 0 || widthA == 0 || widthB == 0) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
         return 0;
     }
 
     fill_matrix_with_zero(matrixC);
    
+    threads = malloc(threads_num * sizeof(pthread_t));
+    pthread_attr_init(&attribute);
+    pthread_attr_setdetachstate(&attribute, PTHREAD_CREATE_JOINABLE);
+
+    for(long i=0; i < threads_num; i++) {
+        pthread_create(&threads[i], &attribute, calculate_matrix_matrix, (void *)i);
+    }
+
+    for(long i=0; i < threads_num; i++) {
+        pthread_join(threads[i], (void *)&i);
+    }
+
+    return 1;
+}
+
+void *calculate_matrix_matrix(void *thread_id) {
+    int widthA = gmatrixA->width, heightA = gmatrixA->height;
+    int widthB = gmatrixB->width;
+    int currentLine, limit = widthA * heightA / threads_num;
+    float *currentPointB, *currentPointC;
     float value;
-    for(int i=0; i < (widthA * heightA); i++) {
-        value = matrixA->rows[i];
-        matrixAVec = _mm256_set1_ps(value); // set value in matrix A to vector
-        
+
+    __m256 matrixAVec;
+    __m256 matrixBVec;
+    __m256 resultVec;
+
+    int startingPoint = (long) thread_id;
+    for(int i=0; i < limit; i++) {
+        value = gmatrixA->rows[i + limit*startingPoint];
+
+        printf("Value: %f\n", value);
+        matrixAVec = _mm256_set1_ps(value);
+
         if(i % widthA == 0) {
-            currentPointB = matrixB->rows;
+            currentPointB = gmatrixB->rows;
         }
-        
-        int currentLine = i / widthA;
-        currentPointC = matrixC->rows + (currentLine * widthB);
+
+        currentLine = i / widthA;
+        currentPointC = gmatrixC->rows + (limit*startingPoint);
         resultVec = _mm256_load_ps(currentPointC);
-       
+
         for(int j=0; j < widthB/8; j++) {
             matrixBVec = _mm256_load_ps(currentPointB);
             resultVec = _mm256_fmadd_ps(matrixAVec, matrixBVec, resultVec);
@@ -190,11 +226,10 @@ int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct m
             currentPointC += 8;
             currentPointB += 8;
 
-            resultVec = _mm256_load_ps(currentPointC);
+            // resultVec = _mm256_load_ps(currentPointC);
         }
     }
-
-    return 1;
+    pthread_exit(thread_id);
 }
 
 void fill_matrix_with_zero(struct matrix *matrix) {
