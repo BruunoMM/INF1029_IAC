@@ -5,14 +5,14 @@
 #define THREADS_PER_BLOCK 256
 
 void printMatrix(struct matrix *matrix);
-    
+
 __global__
-void mult_scalar(float scalar, int n, struct matrix *matrix) {
+void mult_scalar(float scalar, int n, float* d_rows) {
     int index = blockDim.x * blockIdx.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
 
     for(int i = index; i < n; i += stride){
-        matrix->d_rows[i] *= scalar;
+        d_rows[i] *= scalar;
     }
 }
 
@@ -45,7 +45,7 @@ void printMatrix(struct matrix *matrix) {
     int height = matrix->height;
 
     for(int i=1; i <= width * height; i++) {
-        printf("%.2f \t", matrix->d_rows[i-1]);
+        printf("%.2f \t", matrix->h_rows[i-1]);
         if(!(i % width)) {
             printf("\n");
         }
