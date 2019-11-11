@@ -12,7 +12,7 @@ void safeCudaMalloc(float **ptr, int size);
 
 int main(int argc, char *argv[]) {
     FILE *arq, *arq2, *arq3, *arq4;
-    int height1, width1, height2, width2, threads;
+    int height1, width1, height2, width2;
     float cons;
     char *pathFile1, *pathFile2, *pathResultFile1, *pathResultFile2;
 
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     pathResultFile1 = argv[8];
     pathResultFile2 = argv[9];
 
-    if(argc != 11) {
+    if(argc != 10) {
         printf("Numero de argumentos invalidos.\n");
         return -1;
     } else if ((height1 + width1 + height2 + width2) % 8 != 0) {
@@ -89,11 +89,10 @@ struct matrix *readDatFile(FILE *arq, int height, int width){
     float *rows;
     int count = 0;
     int totalSize = height * width;
-    cudaError_t cudaResult;
-
-    matrixEx = malloc(sizeof(struct matrix));
+    
+    matrixEx = (struct matrix *) malloc(sizeof(struct matrix));
     safeCudaMalloc(&matrixEx->d_rows, totalSize);
-    rows = malloc(totalSize*sizeof(float));
+    rows = (float *)malloc(totalSize*sizeof(float));
 
     matrixEx->height = height;
     matrixEx->width = width;
@@ -111,11 +110,11 @@ struct matrix *readDatFile(FILE *arq, int height, int width){
 
 void safeCudaMemCpy(float *d_x, float *h_x, int size) {
     cudaError_t cudaResult;
-    cudaResult = cudaMemcpy(d_x, h_x, DATASET_SIZE*sizeof(float), cudaMemcpyHostToDevice);
+    cudaResult = cudaMemcpy(d_x, h_x, size*sizeof(float), cudaMemcpyHostToDevice);
 
     if (cudaResult != cudaSuccess) {
-	    printf("cudaMemcpy (h_x -> d_x) returned error %s (code %d), line(%d)\n", cudaGetErrorString(cudaError), cudaError, __LINE__);
-        return 1;
+	    printf("cudaMemcpy (h_x -> d_x) returned error %s (code %d), line(%d)\n", cudaGetErrorString(cudaResult), cudaResult, __LINE__);
+        exit(1);
     }
 }
 
@@ -123,7 +122,7 @@ void safeCudaMalloc(float **ptr, int size) {
     cudaError_t cudaResult; 
     cudaResult = cudaMalloc(ptr, size* sizeof(float));
     if (cudaResult != cudaSuccess) {
-	    printf("cudaMalloc d_x returned error %s (code %d)\n", cudaGetErrorString(cudaError), cudaError);
+	    printf("cudaMalloc d_x returned error %s (code %d)\n", cudaGetErrorString(cudaResult), cudaResult);
         exit(1);
     }
 }
@@ -134,7 +133,7 @@ void writeDatFile(FILE *arq, struct matrix *matrix) {
     int totalSize = height * width;
 
     for(int i=0 ; i < totalSize ; i++) {
-        float numberToWrite = matrix->rows[i];
+        float numberToWrite = matrix->h_rows[i];
         int result = fwrite(&numberToWrite, sizeof(float), 1, arq);
         if(result != 1) {
             printf("Erro de escrita!!! \n");
