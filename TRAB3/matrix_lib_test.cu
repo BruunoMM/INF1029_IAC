@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     safeCudaMemCpy(matrixA->h_rows, matrixA->d_rows, height1*width1, cudaMemcpyDeviceToHost);
     printMatrix(matrixA);
 
-    // freeMatrix(matrixA);
+    freeMatrix(matrixA);
     // freeMatrix(matrixB);
     // freeMatrix(matrixC);
 
@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
 
 void freeMatrix(struct matrix* matrix) {
     free(matrix->h_rows);
+    cudaFree(matrix->d_rows);
     free(matrix);
 }
 
@@ -124,7 +125,8 @@ void safeCudaMemCpy(float *d_x, float *h_x, int size, enum cudaMemcpyKind kind) 
 
 void safeCudaMalloc(float **ptr, int size) {
     cudaError_t cudaResult; 
-    cudaResult = cudaMalloc(ptr, size* sizeof(float));
+    cudaResult = cudaMalloc(ptr, size * sizeof(float));
+    
     if (cudaResult != cudaSuccess) {
 	    printf("cudaMalloc d_x returned error %s (code %d)\n", cudaGetErrorString(cudaResult), cudaResult);
         exit(1);
