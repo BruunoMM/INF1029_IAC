@@ -7,7 +7,8 @@ struct matrix *readDatFile(FILE *arq, int height, int width);
 void writeDatFile(FILE *arq, struct matrix *matrix);
 struct matrix* createMatrixC(int height, int width);
 void freeMatrix(struct matrix* matrix);
-
+void safeCudaMemCpy(float *d_x, float *h_x, int size);
+void safeCudaMalloc(float **ptr, int size);
 
 int main(int argc, char *argv[]) {
     FILE *arq, *arq2, *arq3, *arq4;
@@ -67,14 +68,14 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-struct matrix* createMatrixC(int height, int width) {
-    struct matrix *matrixC = malloc(sizeof(struct matrix));
-    matrixC->h_rows = aligned_alloc(32, height * width * sizeof(float));
-    matrixC->height = height;
-    matrixC->width = width;
+// struct matrix* createMatrixC(int height, int width) {
+//     struct matrix *matrixC = malloc(sizeof(struct matrix));
+//     matrixC->h_rows = aligned_alloc(32, height * width * sizeof(float));
+//     matrixC->height = height;
+//     matrixC->width = width;
 
-    return matrixC;
-}
+//     return matrixC;
+// }
 
 void freeMatrix(struct matrix* matrix) {
     free(matrix->h_rows);

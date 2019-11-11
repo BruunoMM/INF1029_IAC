@@ -2,8 +2,6 @@
 #include <cuda_runtime.h>
 #include "matrix_lib.h"
 
-#define THREADS_PER_BLOCK 256
-
 void test_scalar_matrix_mult();
 void printMatrix(struct matrix *matrix);
 void fill_matrix_with_zero(struct matrix *matrix);

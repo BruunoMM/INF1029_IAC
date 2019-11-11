@@ -1,3 +1,5 @@
+#define THREADS_PER_BLOCK 256
+
 struct matrix {
     unsigned long int height;
     unsigned long int width;
