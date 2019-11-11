@@ -54,9 +54,11 @@ int main(int argc, char *argv[]) {
 
     int blockSize = THREADS_PER_BLOCK;
     int numBlocks = (height1 * width1 + blockSize - 1) / blockSize;
+    
     mult_scalar<<<numBlocks, blockSize>>>(cons, height1 * width1, matrixA);
     printMatrix(matrixA);
-    freeMatrix(matrixA);
+
+    // freeMatrix(matrixA);
     // freeMatrix(matrixB);
     // freeMatrix(matrixC);
 
@@ -90,7 +92,7 @@ struct matrix *readDatFile(FILE *arq, int height, int width){
     cudaError_t cudaResult;
 
     matrixEx = malloc(sizeof(struct matrix));
-    safeCudaMalloc(&matrix->d_rows, totalSize);
+    safeCudaMalloc(&matrixEx->d_rows, totalSize);
     rows = malloc(totalSize*sizeof(float));
 
     matrixEx->height = height;
@@ -102,7 +104,7 @@ struct matrix *readDatFile(FILE *arq, int height, int width){
     }
 
     matrixEx->h_rows = rows;
-    safeCudaMemCpy(matrix->d_rows, matrix->h_rows, totalSize);
+    safeCudaMemCpy(matrixEx->d_rows, matrixEx->h_rows, totalSize);
 
     return matrixEx;
 }

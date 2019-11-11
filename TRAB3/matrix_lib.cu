@@ -2,24 +2,11 @@
 #include <cuda_runtime.h>
 #include "matrix_lib.h"
 
+#define THREADS_PER_BLOCK 256
+
 void test_scalar_matrix_mult();
 void printMatrix(struct matrix *matrix);
-void fill_matrix_with_zero(struct matrix *matrix);
 void test_matrix_matrix_mult();
-void *calculate_scalar_matrix(void *thread_id);
-void *calculate_matrix_matrix(void *thread_id);
-
-// scalarMatrix
-__m256 currentVec; 
-__m256 scalarVec;
-__m256 resultVec;
-struct matrix *global_matrix;
-float scalarValue;
-
-// matrixMatrix
-struct matrix *gmatrixA;
-struct matrix *gmatrixB;
-struct matrix *gmatrixC;
 
 int run_tests(void) {
     printf("\nRunning scalar multiplication test\n");
@@ -100,17 +87,16 @@ void mult_scalar(float scalar, int n, struct matrix *matrix) {
         matrix->d_rows[i] *= scalar;
     }
 }
+
 int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
     unsigned long int height = matrix->height;
     unsigned long int width = matrix->width;
-
-    global_matrix = matrix;
-    scalarValue = scalar_value;
 
     if(height == 0 || width == 0 || matrix->rows == NULL) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
         return 0;
     }
+
     return 1;
 }
 
@@ -118,12 +104,6 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
 int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC) {
     unsigned long int heightA = matrixA->height;
     unsigned long int widthA = matrixA->width, widthB = matrixB->width;
-    pthread_t *threads;
-    pthread_attr_t attribute;
-
-    gmatrixA = matrixA;
-    gmatrixB = matrixB;
-    gmatrixC = matrixC;
 
     if(heightA == 0 || widthA == 0 || widthB == 0) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
