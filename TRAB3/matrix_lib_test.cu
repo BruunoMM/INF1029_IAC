@@ -47,18 +47,17 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     struct matrix *matrixA = readDatFile(arq, height1, width1);
-    // struct matrix *matrixB = readDatFile(arq2, height2, width2);
-    // struct matrix *matrixC = createMatrixC(height1, width2);
+    struct matrix *matrixB = readDatFile(arq2, height2, width2);
+    struct matrix *matrixC = createMatrixC(height1, width2);
 
-    int blockSize = THREADS_PER_BLOCK;
-    int numBlocks = (height1 * width1 + blockSize - 1) / blockSize;
-        
     scalar_matrix_mult(cons, matrixA);
-    printMatrix(matrixA);
+
+    matrix_matrix_mult(matrixA, matrixB, matrixC);
+    printMatrix(matrixC);
 
     freeMatrix(matrixA);
-    // freeMatrix(matrixB);
-    // freeMatrix(matrixC);
+    freeMatrix(matrixB);
+    freeMatrix(matrixC);
 
     fclose(arq);    
     fclose(arq2);   
@@ -68,14 +67,15 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-// struct matrix* createMatrixC(int height, int width) {
-//     struct matrix *matrixC = malloc(sizeof(struct matrix));
-//     matrixC->h_rows = aligned_alloc(32, height * width * sizeof(float));
-//     matrixC->height = height;
-//     matrixC->width = width;
+struct matrix* createMatrixC(int height, int width) {
+     struct matrix *matrixC = (struct matrix *)malloc(sizeof(struct matrix));
+     matrixC->h_rows = (float *)malloc(height * width * sizeof(float));
+     matrixC->height = height;
+     matrixC->width = width;
+     safeCudaMalloc(&matrixC->d_rows, height * width);
 
-//     return matrixC;
-// }
+     return matrixC;
+}
 
 void freeMatrix(struct matrix* matrix) {
     free(matrix->h_rows);

@@ -17,11 +17,17 @@ void mult_scalar(float scalar, int n, float* d_rows) {
 }
 
 __global__
-void mult_matrix(int heightA, int widthA, int heightB, int widthB, float* a_rows, float* b_rows) {
-    int index = blockDim.x * blockIdx.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
-
-    
+void mult_matrix(int heightA, int widthA, int widthB, float* a_rows, float* b_rows, float *c_rows) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int nA = widthA * heightA; // Numero de elementos de A
+    int currentLineC = index / widthB;     
+    int indColunaB = (index - currentLineC * widthB) % widthB; // Indice da coluna de B sendo utilizada
+    int currentLineA = (index % nA) / widthA;
+    int indComecoA = currentLineA*widthA; // Indice de começo de uma determinada linha na matriz A 
+    int posC = index % widthB*heightA; // Posicao na matriz C
+ 
+    for(int i = 0; i < widthA; i++)	 
+    	c_rows[posC] += a_rows[indComecoA + i] * b_rows[indColunaB + i*widthB];
 }
 
 void safeCudaMemCpy(float *d_x, float *h_x, int size, enum cudaMemcpyKind kind) {
@@ -52,21 +58,39 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
         return 0;
     }
-    mult_scalar<<<numBlocks, blockSize>>>(cons, height*width, matrix->d_rows);
+
+    int blockSize = THREADS_PER_BLOCK;
+    int numBlocks = (height * width + blockSize - 1) / blockSize;
+
+    mult_scalar<<<numBlocks, blockSize>>>(scalar_value, height*width, matrix->d_rows);
     safeCudaMemCpy(matrix->h_rows, matrix->d_rows, height*width, cudaMemcpyDeviceToHost);
 
+    cudaDeviceSynchronize();
     return 1;
 }
 
 
 int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct matrix * matrixC) {
-    unsigned long int heightA = matrixA->height;
+    unsigned long int heightA = matrixA->height, heightB = matrixB->height;
     unsigned long int widthA = matrixA->width, widthB = matrixB->width;
 
-    if(heightA == 0 || widthA == 0 || widthB == 0) {
+    if(heightA == 0 || widthA == 0 || widthB == 0 || widthA != heightB) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
         return 0;
     }
+    
+    int blockSize = THREADS_PER_BLOCK;
+    int heightC = (heightA + blockSize - 1) / blockSize;
+    int widthC = (widthB + blockSize - 1) / blockSize;
+    int numBlocks = (heightA * widthB + blockSize - 1) / blockSize;
+    /*printf("AAA\n");
+    dim3 dimC(widthC, heightC);
+    dim3 dimBlocks(blockSize, blockSize);
+    printf("BBB\n"); */
+    mult_matrix<<<numBlocks, blockSize>>>(heightA, widthA, widthB, matrixA->d_rows, matrixB->d_rows, matrixC->d_rows);
+    safeCudaMemCpy(matrixC->h_rows, matrixC->d_rows, heightA * widthB, cudaMemcpyDeviceToHost);
+    
+    cudaDeviceSynchronize();
     return 1;
 }
 
