@@ -16,6 +16,34 @@ void mult_scalar(float scalar, int n, float* d_rows) {
     }
 }
 
+__global__
+void mult_matrix(int heightA, int widthA, int heightB, int widthB, float* a_rows, float* b_rows) {
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    
+}
+
+void safeCudaMemCpy(float *d_x, float *h_x, int size, enum cudaMemcpyKind kind) {
+    cudaError_t cudaResult;
+    cudaResult = cudaMemcpy(d_x, h_x, size*sizeof(float), kind);
+
+    if (cudaResult != cudaSuccess) {
+	    printf("cudaMemcpy (h_x -> d_x) returned error %s (code %d), line(%d)\n", cudaGetErrorString(cudaResult), cudaResult, __LINE__);
+        exit(1);
+    }
+}
+
+void safeCudaMalloc(float **ptr, int size) {
+    cudaError_t cudaResult; 
+    cudaResult = cudaMalloc(ptr, size * sizeof(float));
+    
+    if (cudaResult != cudaSuccess) {
+	    printf("cudaMalloc d_x returned error %s (code %d)\n", cudaGetErrorString(cudaResult), cudaResult);
+        exit(1);
+    }
+}
+
 int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
     unsigned long int height = matrix->height;
     unsigned long int width = matrix->width;
@@ -24,6 +52,8 @@ int scalar_matrix_mult(float scalar_value, struct matrix *matrix) {
         printf("Dimensao nao pode ser igual a zero.\n"); 
         return 0;
     }
+    mult_scalar<<<numBlocks, blockSize>>>(cons, height*width, matrix->d_rows);
+    safeCudaMemCpy(matrix->h_rows, matrix->d_rows, height*width, cudaMemcpyDeviceToHost);
 
     return 1;
 }

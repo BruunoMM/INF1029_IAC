@@ -7,8 +7,6 @@ struct matrix *readDatFile(FILE *arq, int height, int width);
 void writeDatFile(FILE *arq, struct matrix *matrix);
 struct matrix* createMatrixC(int height, int width);
 void freeMatrix(struct matrix* matrix);
-void safeCudaMemCpy(float *d_x, float *h_x, int size, enum cudaMemcpyKind kind);
-void safeCudaMalloc(float **ptr, int size);
 
 int main(int argc, char *argv[]) {
     FILE *arq, *arq2, *arq3, *arq4;
@@ -54,9 +52,8 @@ int main(int argc, char *argv[]) {
 
     int blockSize = THREADS_PER_BLOCK;
     int numBlocks = (height1 * width1 + blockSize - 1) / blockSize;
-	    
-    mult_scalar<<<numBlocks, blockSize>>>(cons, height1 * width1, matrixA->d_rows);
-    safeCudaMemCpy(matrixA->h_rows, matrixA->d_rows, height1*width1, cudaMemcpyDeviceToHost);
+        
+    scalar_matrix_mult(cons, matrixA);
     printMatrix(matrixA);
 
     freeMatrix(matrixA);
@@ -111,26 +108,6 @@ struct matrix *readDatFile(FILE *arq, int height, int width){
     cudaDeviceSynchronize();	
  
     return matrixEx;
-}
-
-void safeCudaMemCpy(float *d_x, float *h_x, int size, enum cudaMemcpyKind kind) {
-    cudaError_t cudaResult;
-    cudaResult = cudaMemcpy(d_x, h_x, size*sizeof(float), kind);
-
-    if (cudaResult != cudaSuccess) {
-	    printf("cudaMemcpy (h_x -> d_x) returned error %s (code %d), line(%d)\n", cudaGetErrorString(cudaResult), cudaResult, __LINE__);
-        exit(1);
-    }
-}
-
-void safeCudaMalloc(float **ptr, int size) {
-    cudaError_t cudaResult; 
-    cudaResult = cudaMalloc(ptr, size * sizeof(float));
-    
-    if (cudaResult != cudaSuccess) {
-	    printf("cudaMalloc d_x returned error %s (code %d)\n", cudaGetErrorString(cudaResult), cudaResult);
-        exit(1);
-    }
 }
 
 void writeDatFile(FILE *arq, struct matrix *matrix) {
