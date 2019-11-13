@@ -27,9 +27,6 @@ int main(int argc, char *argv[]) {
     if(argc != 10) {
         printf("Numero de argumentos invalidos.\n");
         return -1;
-    } else if ((height1 + width1 + height2 + width2) % 8 != 0) {
-        printf("Dimensoes nao multiplas de 8.\n");
-        return -1;
     }
     
     arq = fopen(pathFile1, "rb");
@@ -51,9 +48,7 @@ int main(int argc, char *argv[]) {
     struct matrix *matrixC = createMatrixC(height1, width2);
 
     scalar_matrix_mult(cons, matrixA);
-
     matrix_matrix_mult(matrixA, matrixB, matrixC);
-    printMatrix(matrixC);
 
     freeMatrix(matrixA);
     freeMatrix(matrixB);

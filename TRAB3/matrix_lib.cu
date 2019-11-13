@@ -30,15 +30,20 @@ void mult_matrix(float *d_rowsA, float *d_rowsB, float *d_rowsC, int heightA, in
 __global__
 void mult_matrix(float* a_rows, float* b_rows, float *c_rows, int heightA, int widthA, int widthB) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int nA = widthA * heightA; // Numero de elementos de A
-    int currentLineC = index / widthB;     
-    int indColunaB = (index - currentLineC * widthB) % widthB; // Indice da coluna de B sendo utilizada
-    int currentLineA = (index % nA) / widthA;
-    int indComecoA = currentLineA*widthA; // Indice de começo de uma determinada linha na matriz A 
-    int posC = index % widthB*heightA; // Posicao na matriz C
- 
-    for(int i = 0; i < widthA; i++)	 
-    	c_rows[posC] += a_rows[indComecoA + i] * b_rows[indColunaB + i*widthB];
+    int stride = blockDim.x * gridDim.x;
+
+    int indColunaB = index % widthB; // Indice da coluna de B sendo utilizada
+    int currentLineA = index / widthA;
+    int indLineComecoA = currentLineA*widthA; // Indice de começo de uma determinada linha na matriz A 
+    int nC = heightA * widthB;
+
+    for(int k = index; k < nC; k += stride){
+       float soma = 0.0;
+       for(int i = 0; i < widthA; i++){	 
+    	   soma += a_rows[indLineComecoA + i] * b_rows[indColunaB + i*widthB];
+       }
+       c_rows[index] = soma;
+    }
 }  
 
 void safeCudaMemCpy(float *d_x, float *h_x, int size, enum cudaMemcpyKind kind) {
@@ -91,12 +96,9 @@ int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct m
     }
     
     int blockSize = THREADS_PER_BLOCK;
-    unsigned int grid_rows = (heightA + blockSize - 1) / blockSize;
-    unsigned int grid_cols = (widthB + blockSize -1) / blockSize;
-    dim3 dimGrid(grid_rows, grid_cols);
-    dim3 dimBlocks(blockSize, blockSize);
-    
-    mult_matrix<<<dimGrid, dimBlocks>>>(matrixA->d_rows, matrixB->d_rows, matrixC->d_rows, heightA, widthA, widthB);
+    int numBlocks = (heightA * widthB + blockSize - 1) / blockSize;
+
+    mult_matrix<<<numBlocks, blockSize>>>(matrixA->d_rows, matrixB->d_rows, matrixC->d_rows, heightA, widthA, widthB);
     safeCudaMemCpy(matrixC->h_rows, matrixC->d_rows, heightA * widthB, cudaMemcpyDeviceToHost);
     
     cudaDeviceSynchronize();
