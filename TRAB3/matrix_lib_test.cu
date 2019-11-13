@@ -99,9 +99,9 @@ struct matrix *readDatFile(FILE *arq, int height, int width){
 
     while (!feof(arq) && (count < totalSize)){
         fread(&rows[count], sizeof(float), 1, arq);
+
         count++;
     }
-
     matrixEx->h_rows = rows;
     safeCudaMemCpy(matrixEx->d_rows, matrixEx->h_rows, totalSize, cudaMemcpyHostToDevice);
    

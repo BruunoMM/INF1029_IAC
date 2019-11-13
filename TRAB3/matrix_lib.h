@@ -1,4 +1,4 @@
-#define THREADS_PER_BLOCK 256
+#define THREADS_PER_BLOCK 32
 
 struct matrix {
     unsigned long int height;

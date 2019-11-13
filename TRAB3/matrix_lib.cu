@@ -2,8 +2,6 @@
 #include <cuda_runtime.h>
 #include "matrix_lib.h"
 
-#define THREADS_PER_BLOCK 256
-
 void printMatrix(struct matrix *matrix);
 
 __global__
@@ -16,8 +14,21 @@ void mult_scalar(float scalar, int n, float* d_rows) {
     }
 }
 
+/*__global__
+void mult_matrix(float *d_rowsA, float *d_rowsB, float *d_rowsC, int heightA, int widthA, int widthB){
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int column = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    float soma = 0.0;
+    if(row < heightA && column < widthB){
+       for(int k = 0; k < widthA; k++){
+          soma += d_rowsA[row*widthA+k] * d_rowsB[k*widthB + column];
+       }
+       d_rowsC[row*widthB+column] = soma;
+    }
+}	*/
 __global__
-void mult_matrix(int heightA, int widthA, int widthB, float* a_rows, float* b_rows, float *c_rows) {
+void mult_matrix(float* a_rows, float* b_rows, float *c_rows, int heightA, int widthA, int widthB) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int nA = widthA * heightA; // Numero de elementos de A
     int currentLineC = index / widthB;     
@@ -28,7 +39,7 @@ void mult_matrix(int heightA, int widthA, int widthB, float* a_rows, float* b_ro
  
     for(int i = 0; i < widthA; i++)	 
     	c_rows[posC] += a_rows[indComecoA + i] * b_rows[indColunaB + i*widthB];
-}
+}  
 
 void safeCudaMemCpy(float *d_x, float *h_x, int size, enum cudaMemcpyKind kind) {
     cudaError_t cudaResult;
@@ -80,14 +91,12 @@ int matrix_matrix_mult(struct matrix *matrixA, struct matrix * matrixB, struct m
     }
     
     int blockSize = THREADS_PER_BLOCK;
-    int heightC = (heightA + blockSize - 1) / blockSize;
-    int widthC = (widthB + blockSize - 1) / blockSize;
-    int numBlocks = (heightA * widthB + blockSize - 1) / blockSize;
-    /*printf("AAA\n");
-    dim3 dimC(widthC, heightC);
+    unsigned int grid_rows = (heightA + blockSize - 1) / blockSize;
+    unsigned int grid_cols = (widthB + blockSize -1) / blockSize;
+    dim3 dimGrid(grid_rows, grid_cols);
     dim3 dimBlocks(blockSize, blockSize);
-    printf("BBB\n"); */
-    mult_matrix<<<numBlocks, blockSize>>>(heightA, widthA, widthB, matrixA->d_rows, matrixB->d_rows, matrixC->d_rows);
+    
+    mult_matrix<<<dimGrid, dimBlocks>>>(matrixA->d_rows, matrixB->d_rows, matrixC->d_rows, heightA, widthA, widthB);
     safeCudaMemCpy(matrixC->h_rows, matrixC->d_rows, heightA * widthB, cudaMemcpyDeviceToHost);
     
     cudaDeviceSynchronize();
